@@ -19,17 +19,15 @@ npx vite-microfrontend-cli <main-project-name> [options]
 
 ### Arguments
 
-| Argument | Description |
-|----------|-------------|
+| Argument              | Description                         |
+| --------------------- | ----------------------------------- |
 | `<main-project-name>` | Name of the main project (required) |
 
 ### Options
 
-| Option | Description |
-|--------|-------------|
+| Option                  | Description                                     |
+| ----------------------- | ----------------------------------------------- |
 | `-n, --number <number>` | Number of microfrontends to create (default: 1) |
-| `-v, --version` | Output the version number |
-| `-h, --help` | Display help for command |
 
 ### Example
 
@@ -40,6 +38,7 @@ npx vite-microfrontend-cli my-app -n 3
 ```
 
 This will:
+
 1. Prompt you for names for each microfrontend project
 2. Create the main host application
 3. Create the specified number of microfrontend projects
