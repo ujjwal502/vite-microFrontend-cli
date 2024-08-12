@@ -1,38 +1,58 @@
 #!/usr/bin/env node
-
-const { Command } = require("commander");
-const { execSync } = require("child_process");
-const path = require("path");
-const fs = require("fs");
+import { Command } from "commander";
+import { createPromptModule } from "inquirer";
+import { execSync } from "child_process";
+import { join } from "path";
+import { writeFileSync } from "fs";
 
 const program = new Command();
+const prompt = createPromptModule();
 
 program
   .version("1.0.0")
-  .argument("<project-name>", "Name of the main project")
+  .argument("<main-project-name>", "Name of the main project")
   .option("-n, --number <number>", "Number of microfrontends", "1")
-  .action((projectName, options) => {
+  .action(async (mainProjectName, options) => {
     const numOfProjects = parseInt(options.number, 10);
-    createMicrofrontendProjects(projectName, numOfProjects);
+    const projectNames = await promptForProjectNames(numOfProjects);
+    createMicrofrontendProjects(mainProjectName, projectNames);
   });
 
 program.parse(process.argv);
 
-function createMicrofrontendProjects(mainProjectName, numOfProjects) {
-  console.log(`Creating ${numOfProjects} microfrontend projects using Vite...`);
+async function promptForProjectNames(numOfProjects) {
+  const questions = [];
 
   for (let i = 0; i < numOfProjects; i++) {
-    const projectDir = `${mainProjectName}-microfrontend-${i + 1}`;
+    questions.push({
+      type: "input",
+      name: `project${i + 1}`,
+      message: `Enter name for microfrontend project ${i + 1}:`,
+      default: `microfrontend-${i + 1}`,
+    });
+  }
+
+  const answers = await prompt(questions);
+  return Object.values(answers);
+}
+
+function createMicrofrontendProjects(mainProjectName, projectNames) {
+  console.log(
+    `Creating ${projectNames.length} microfrontend projects using Vite...`
+  );
+
+  projectNames.forEach((projectName, index) => {
+    const projectDir = `${mainProjectName}-${projectName}`;
     execSync(`npm create vite@latest ${projectDir} -- --template react`, {
       stdio: "inherit",
     });
 
-    setupMicrofrontendArchitecture(projectDir, i + 1);
-  }
+    setupMicrofrontendArchitecture(projectDir, projectName);
+  });
 }
 
-function setupMicrofrontendArchitecture(projectDir, projectNumber) {
-  const viteConfigPath = path.join(projectDir, "vite.config.js");
+function setupMicrofrontendArchitecture(projectDir, projectName) {
+  const viteConfigPath = join(projectDir, "vite.config.js");
 
   const viteConfig = `
 import { defineConfig } from 'vite';
@@ -43,7 +63,7 @@ export default defineConfig({
   plugins: [
     react(),
     federation({
-      name: 'app${projectNumber}',
+      name: '${projectName}',
       filename: 'remoteEntry.js',
       exposes: {
         './Button': './src/components/Button.jsx',
@@ -57,6 +77,6 @@ export default defineConfig({
 });
   `;
 
-  fs.writeFileSync(viteConfigPath, viteConfig);
+  writeFileSync(viteConfigPath, viteConfig);
   console.log(`Microfrontend setup completed for ${projectDir}`);
 }
