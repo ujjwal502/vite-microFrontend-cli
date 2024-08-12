@@ -1,0 +1,19 @@
+{
+  "name": "vite-microfrontend-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bin": {
+    "vite-microfrontend-cli": "./cli.js"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "inquirer": "^10.1.8"
+  }
+}
