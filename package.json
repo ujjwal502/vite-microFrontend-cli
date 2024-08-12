@@ -2,6 +2,11 @@
   "name": "vite-microfrontend-cli",
   "version": "1.0.2",
   "description": "A CLI tool to create multiple React projects with microfrontend architecture using Vite",
+  "homepage": "https://github.com/ujjwal502/vite-microFrontend-cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ujjwal502/vite-microFrontend-cli"
+  },
   "main": "cli.js",
   "type": "module",
   "scripts": {
