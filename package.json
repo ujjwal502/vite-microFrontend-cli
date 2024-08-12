@@ -1,15 +1,20 @@
 {
   "name": "vite-microfrontend-cli",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A CLI tool to create multiple React projects with microfrontend architecture using Vite",
+  "main": "cli.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "vite",
+    "microfrontend",
+    "react",
+    "cli"
+  ],
+  "author": "Ujjwal Tiwari",
+  "license": "MIT",
   "bin": {
     "vite-microfrontend-cli": "./cli.js"
   },
