@@ -21,7 +21,7 @@
   "author": "Ujjwal Tiwari",
   "license": "MIT",
   "bin": {
-    "vite-microfrontend-cli": "./cli.js"
+    "vite-microfrontend-cli": "./bin/cli.js"
   },
   "dependencies": {
     "commander": "^12.1.0",
