@@ -10,36 +10,10 @@ const prompt = createPromptModule();
 
 program
   .version("1.0.0")
-  .argument("[main-project-name]", "Name of the main project")
-  .option("-n, --number <number>", "Number of microfrontends")
+  .argument("<main-project-name>", "Name of the main project")
+  .option("-n, --number <number>", "Number of microfrontends", "1")
   .action(async (mainProjectName, options) => {
-    if (!mainProjectName) {
-      const answer = await prompt({
-        type: "input",
-        name: "mainProjectName",
-        message: "Enter the name of the main project:",
-        default: "main-project",
-      });
-      mainProjectName = answer.mainProjectName;
-    }
-
-    let numOfProjects = parseInt(options.number, 10);
-    if (isNaN(numOfProjects)) {
-      const answer = await prompt({
-        type: "input",
-        name: "numOfProjects",
-        message: "Enter the number of microfrontend projects:",
-        default: "1",
-        validate: (input) => {
-          const value = parseInt(input, 10);
-          return !isNaN(value) && value > 0
-            ? true
-            : "Please enter a valid number.";
-        },
-      });
-      numOfProjects = parseInt(answer.numOfProjects, 10);
-    }
-
+    const numOfProjects = parseInt(options.number, 10);
     const projectNames = await promptForProjectNames(numOfProjects);
     createMicrofrontendProjects(mainProjectName, projectNames);
     setupHostApplication(mainProjectName, projectNames);
@@ -83,6 +57,7 @@ function setupMicrofrontendArchitecture(projectDir, projectName) {
   const componentDir = join(projectDir, "src/components");
   const componentPath = join(componentDir, "Component.jsx");
 
+  // Ensure that the src/components directory exists
   mkdirSync(componentDir, { recursive: true });
 
   const viteConfig = `
