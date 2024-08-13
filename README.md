@@ -11,6 +11,18 @@ A command-line interface tool for quickly setting up microfrontend projects usin
 
 ## Usage
 
+To install the CLI tool globally, use:
+
+```bash
+npm install -g vite-microfrontend-cli
+```
+
+To create a new project with microfrontends, navigate to your preferred directory in your terminal and run:
+
+```bash
+vite-microfrontend-cli <main-project-name> -n <number-of-microfrontends>
+```
+
 You can use this tool without installing it globally by using `npx`. Run the following command:
 
 ```bash
