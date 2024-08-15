@@ -12,6 +12,6 @@ export function createMicrofrontendProjects(mainProjectName, projectNames) {
       stdio: "inherit",
     });
 
-    setupMicrofrontendArchitecture(projectDir, projectName);
+    setupMicrofrontendArchitecture(projectDir, projectName, index);
   });
 }

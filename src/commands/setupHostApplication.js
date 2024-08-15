@@ -3,18 +3,40 @@ import { join } from "path";
 import { writeFileSync } from "fs";
 
 export function setupHostApplication(mainProjectName, projectNames) {
+  const clonedProjectNames = structuredClone(projectNames);
+  const capitalizedNames = clonedProjectNames.map((name) => {
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  });
+
   const hostDir = `${mainProjectName}-host`;
   execSync(`npm create vite@latest ${hostDir} -- --template react`, {
     stdio: "inherit",
   });
 
-  const viteConfigPath = join(hostDir, "vite.config.js");
-  const appPath = join(hostDir, "src/App.jsx");
+  // Change to the host directory
+  process.chdir(hostDir);
 
-  const remoteEntries = projectNames
+  // Install @originjs/vite-plugin-federation
+  console.log("Installing @originjs/vite-plugin-federation...");
+  try {
+    execSync("npm install @originjs/vite-plugin-federation --save-dev", {
+      stdio: "inherit",
+    });
+  } catch (error) {
+    console.error("Failed to install @originjs/vite-plugin-federation:", error);
+    return;
+  }
+
+  const viteConfigPath = join(process.cwd(), "vite.config.js");
+  const appPath = join(process.cwd(), "src/App.jsx");
+  const packageJsonPath = join(process.cwd(), "package.json");
+
+  const remoteEntries = capitalizedNames
     .map(
       (name, index) =>
-        `${name}: '${name}@http://localhost:300${index + 1}/remoteEntry.js'`
+        `${name}: 'http://localhost:300${index + 2}/assets/remoteEntry${
+          index + 1
+        }.js'`
     )
     .join(",\n        ");
 
@@ -35,14 +57,30 @@ export function setupHostApplication(mainProjectName, projectNames) {
       }),
     ],
     build: {
-      target: 'esnext',
+      modulePreload: false,
+      target: "esnext",
+      minify: false,
+      cssCodeSplit: false,
+    },
+    server: {
+      port: 3000,
+      strictPort: true,
+    },
+    preview: {
+      port: 3001,
+      strictPort: true,
     },
   });
     `;
 
   const imports = projectNames
     .map(
-      (name) => `const ${name} = React.lazy(() => import('${name}/Component'));`
+      (name) =>
+        `const ${
+          name.charAt(0).toUpperCase() + name.slice(1)
+        } = React.lazy(() => import('${
+          name.charAt(0).toUpperCase() + name.slice(1)
+        }/Component'));`
     )
     .join("\n");
 
@@ -55,7 +93,7 @@ export function setupHostApplication(mainProjectName, projectNames) {
     return (
       <div>
         <h1>Main Host Application</h1>
-        ${projectNames
+        ${capitalizedNames
           .map(
             (name) =>
               `<Suspense fallback={<div>Loading ${name}...</div>}><${name} /></Suspense>`
@@ -70,6 +108,9 @@ export function setupHostApplication(mainProjectName, projectNames) {
 
   writeFileSync(viteConfigPath, viteConfig);
   writeFileSync(appPath, appCode);
+
+  // Change back to the original directory
+  process.chdir("..");
 
   console.log(`Host application setup completed for ${hostDir}`);
 }

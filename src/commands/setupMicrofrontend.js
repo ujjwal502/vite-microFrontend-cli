@@ -1,13 +1,26 @@
 import { join } from "path";
 import { writeFileSync, mkdirSync } from "fs";
+import { execSync } from "child_process";
 
-export function setupMicrofrontendArchitecture(projectDir, projectName) {
+export function setupMicrofrontendArchitecture(projectDir, projectName, index) {
   const viteConfigPath = join(projectDir, "vite.config.js");
   const componentDir = join(projectDir, "src/components");
   const componentPath = join(componentDir, "Component.jsx");
 
   // Ensure that the src/components directory exists
   mkdirSync(componentDir, { recursive: true });
+
+  // Install @originjs/vite-plugin-federation
+  console.log(`Installing dependencies for ${projectName}...`);
+  try {
+    execSync("npm install @originjs/vite-plugin-federation --save-dev", {
+      cwd: projectDir,
+      stdio: "inherit",
+    });
+  } catch (error) {
+    console.error("Failed to install @originjs/vite-plugin-federation:", error);
+    return;
+  }
 
   const viteConfig = `
   import { defineConfig } from 'vite';
@@ -19,7 +32,7 @@ export function setupMicrofrontendArchitecture(projectDir, projectName) {
       react(),
       federation({
         name: '${projectName}',
-        filename: 'remoteEntry.js',
+        filename: 'remoteEntry${index + 1}.js',
         exposes: {
           './Component': './src/components/Component.jsx',
         },
@@ -27,7 +40,18 @@ export function setupMicrofrontendArchitecture(projectDir, projectName) {
       }),
     ],
     build: {
-      target: 'esnext',
+      modulePreload: false,
+      target: "esnext",
+      minify: false,
+      cssCodeSplit: false,
+    },
+    server: {
+      port: 300${index + 1},
+      strictPort: true,
+    },
+    preview: {
+      port: 300${index + 2},
+      strictPort: true,
     },
   });
     `;
