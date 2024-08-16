@@ -72,6 +72,8 @@ To start development, navigate to the workspace directory and run:
 npm run preview-all
 ```
 
+**Remember to run the remote application and host application in Preview mode when developing instead of Development mode to get the file serving working.**
+
 so running `npx vite-microfrontend-cli <main-project-name> [options]` installs dependencies for all projects, builds them. You don't need to run `npm run install-all` or `npm run build-all` separately unless you want to perform these steps individually.
 
 If you do want to run the steps separately, you can use:
