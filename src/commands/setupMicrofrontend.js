@@ -1,11 +1,20 @@
 import { join } from "path";
-import { writeFileSync, mkdirSync } from "fs";
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from "fs";
 import { execSync } from "child_process";
 
-export function setupMicrofrontendArchitecture(projectDir, projectName, index) {
-  const viteConfigPath = join(projectDir, "vite.config.js");
+export function setupMicrofrontendArchitecture(
+  projectDir,
+  projectName,
+  index,
+  useTypeScript
+) {
+  const viteConfigPath = join(
+    projectDir,
+    useTypeScript ? "vite.config.ts" : "vite.config.js"
+  );
   const componentDir = join(projectDir, "src/components");
-  const componentPath = join(componentDir, "Component.jsx");
+  const fileExtension = useTypeScript ? "tsx" : "jsx";
+  const componentPath = join(componentDir, `Component.${fileExtension}`);
 
   // Ensure that the src/components directory exists
   mkdirSync(componentDir, { recursive: true });
@@ -34,7 +43,7 @@ export function setupMicrofrontendArchitecture(projectDir, projectName, index) {
         name: '${projectName}',
         filename: 'remoteEntry${index + 1}.js',
         exposes: {
-          './Component': './src/components/Component.jsx',
+          './Component': './src/components/Component.${fileExtension}',
         },
         shared: ['react', 'react-dom'],
       }),
@@ -56,7 +65,21 @@ export function setupMicrofrontendArchitecture(projectDir, projectName, index) {
   });
     `;
 
-  const componentCode = `
+  const componentCode = useTypeScript
+    ? `
+  import React from 'react';
+  
+  const Component: React.FC = () => {
+    return (
+      <div>
+        <h2>This is the ${projectName} Microfrontend</h2>
+      </div>
+    );
+  }
+  
+  export default Component;
+    `
+    : `
   import React from 'react';
   
   const Component = () => {
@@ -72,5 +95,52 @@ export function setupMicrofrontendArchitecture(projectDir, projectName, index) {
 
   writeFileSync(viteConfigPath, viteConfig);
   writeFileSync(componentPath, componentCode);
+
+  if (useTypeScript) {
+    // Update package.json to include type-check script
+    const packageJsonPath = join(projectDir, "package.json");
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+    packageJson.scripts = packageJson.scripts || {};
+    packageJson.scripts["type-check"] = "tsc --noEmit";
+    writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+    // Install TypeScript if not already installed
+    try {
+      execSync(
+        "npm install --save-dev typescript @types/react @types/react-dom",
+        { cwd: projectDir, stdio: "inherit" }
+      );
+    } catch (error) {
+      console.error("Failed to install TypeScript dependencies:", error);
+    }
+
+    // Create tsconfig.json if it doesn't exist
+    const tsconfigPath = join(projectDir, "tsconfig.json");
+    if (!existsSync(tsconfigPath)) {
+      const tsconfig = {
+        compilerOptions: {
+          target: "ESNext",
+          useDefineForClassFields: true,
+          lib: ["DOM", "DOM.Iterable", "ESNext"],
+          allowJs: false,
+          skipLibCheck: true,
+          esModuleInterop: false,
+          allowSyntheticDefaultImports: true,
+          strict: true,
+          forceConsistentCasingInFileNames: true,
+          module: "ESNext",
+          moduleResolution: "Node",
+          resolveJsonModule: true,
+          isolatedModules: true,
+          noEmit: true,
+          jsx: "react-jsx",
+        },
+        include: ["src"],
+        references: [{ path: "./tsconfig.node.json" }],
+      };
+      writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+    }
+  }
+
   console.log(`Microfrontend setup completed for ${projectDir}`);
 }

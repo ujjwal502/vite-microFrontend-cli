@@ -1,6 +1,4 @@
-import { createPromptModule } from "inquirer";
-
-const prompt = createPromptModule();
+import inquirer from "inquirer";
 
 export async function promptForProjectNames(numOfProjects) {
   const questions = [];
@@ -14,6 +12,6 @@ export async function promptForProjectNames(numOfProjects) {
     });
   }
 
-  const answers = await prompt(questions);
+  const answers = await inquirer.prompt(questions);
   return Object.values(answers);
 }

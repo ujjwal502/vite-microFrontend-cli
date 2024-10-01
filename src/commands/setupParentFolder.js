@@ -1,7 +1,11 @@
 import { execSync } from "child_process";
 import { writeFileSync, readFileSync, existsSync } from "fs";
 
-export function setupParentFolder(mainProjectName, projectNames) {
+export function setupParentFolder(
+  mainProjectName,
+  projectNames,
+  useTypeScript
+) {
   const parentDir = process.cwd();
 
   const fullProjectNames = projectNames.map(
@@ -24,6 +28,13 @@ export function setupParentFolder(mainProjectName, projectNames) {
       "preview-all": `concurrently "npm run preview --workspace=${mainProjectName}-host" ${fullProjectNames
         .map((name) => `"npm run preview --workspace=${name}"`)
         .join(" ")}`,
+      ...(useTypeScript
+        ? {
+            "type-check": `npm run type-check --workspace=${mainProjectName}-host ${fullProjectNames
+              .map((name) => `--workspace=${name}`)
+              .join(" ")}`,
+          }
+        : {}),
     },
   };
 
@@ -31,31 +42,15 @@ export function setupParentFolder(mainProjectName, projectNames) {
 
   execSync("npm install concurrently --save-dev", { stdio: "inherit" });
 
+  if (useTypeScript) {
+    console.log("Installing TypeScript dependencies...");
+    execSync(
+      "npm install typescript @types/react @types/react-dom --save-dev",
+      { stdio: "inherit" }
+    );
+  }
+
   console.log(`Parent folder setup completed for ${parentDir}`);
-  console.log("Verifying package.json for each project:");
-
-  //   verifyPackageJson function is for debugging. Please ignore
-
-  //   const verifyPackageJson = (projectPath) => {
-  //     const packageJsonPath = join(process.cwd(), projectPath, "package.json");
-  //     if (!existsSync(packageJsonPath)) {
-  //       console.error(`ERROR: package.json not found for ${projectPath}`);
-  //       return;
-  //     }
-  //     const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-  //     console.log(`\nPackage.json for ${projectPath}:`);
-  //     console.log(JSON.stringify(packageJson, null, 2));
-
-  //     // Check if build script exists
-  //     if (!packageJson.scripts || !packageJson.scripts.build) {
-  //       console.error(
-  //         `ERROR: 'build' script not found in package.json for ${projectPath}`
-  //       );
-  //     }
-  //   };
-
-  //   verifyPackageJson(`${mainProjectName}-host`);
-  //   fullProjectNames.forEach((name) => verifyPackageJson(name));
 
   console.log("Installing dependencies for all projects...");
   try {
@@ -73,5 +68,19 @@ export function setupParentFolder(mainProjectName, projectNames) {
     console.error("Error during build-all:", error.message);
     if (error.stdout) console.log("Build stdout:", error.stdout);
     if (error.stderr) console.log("Build stderr:", error.stderr);
+  }
+
+  if (useTypeScript) {
+    console.log("Running type-check...");
+    try {
+      const typeCheckOutput = execSync("npm run type-check", {
+        encoding: "utf8",
+      });
+      console.log("Type-check output:", typeCheckOutput);
+    } catch (error) {
+      console.error("Error during type-check:", error.message);
+      if (error.stdout) console.log("Type-check stdout:", error.stdout);
+      if (error.stderr) console.log("Type-check stderr:", error.stderr);
+    }
   }
 }

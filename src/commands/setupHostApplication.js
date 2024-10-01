@@ -1,15 +1,30 @@
 import { execSync } from "child_process";
 import { join } from "path";
-import { writeFileSync } from "fs";
+import { writeFileSync, readFileSync, existsSync } from "fs";
 
-export function setupHostApplication(mainProjectName, projectNames) {
+function createRemotesDeclaration(projectNames, hostDir) {
+  const declarations = projectNames
+    .map((name) => `declare module '${name}/Component';`)
+    .join("\n");
+
+  const remotesDtsPath = join(hostDir, "src", "remotes.d.ts");
+  writeFileSync(remotesDtsPath, declarations);
+  console.log(`Created remotes.d.ts file at ${remotesDtsPath}`);
+}
+
+export function setupHostApplication(
+  mainProjectName,
+  projectNames,
+  useTypeScript
+) {
   const clonedProjectNames = structuredClone(projectNames);
   const capitalizedNames = clonedProjectNames.map((name) => {
     return name.charAt(0).toUpperCase() + name.slice(1);
   });
 
   const hostDir = `${mainProjectName}-host`;
-  execSync(`npm create vite@latest ${hostDir} -- --template react`, {
+  const template = useTypeScript ? "react-ts" : "react";
+  execSync(`npm create vite@latest ${hostDir} -- --template ${template}`, {
     stdio: "inherit",
   });
 
@@ -27,9 +42,12 @@ export function setupHostApplication(mainProjectName, projectNames) {
     return;
   }
 
-  const viteConfigPath = join(process.cwd(), "vite.config.js");
-  const appPath = join(process.cwd(), "src/App.jsx");
-  const packageJsonPath = join(process.cwd(), "package.json");
+  const viteConfigPath = join(
+    process.cwd(),
+    useTypeScript ? "vite.config.ts" : "vite.config.js"
+  );
+  const fileExtension = useTypeScript ? "tsx" : "jsx";
+  const appPath = join(process.cwd(), `src/App.${fileExtension}`);
 
   const remoteEntries = capitalizedNames
     .map(
@@ -108,6 +126,57 @@ export function setupHostApplication(mainProjectName, projectNames) {
 
   writeFileSync(viteConfigPath, viteConfig);
   writeFileSync(appPath, appCode);
+
+  // Create remotes.d.ts file
+  if (useTypeScript) {
+    createRemotesDeclaration(capitalizedNames, process.cwd());
+  }
+
+  if (useTypeScript) {
+    // Update package.json to include type-check script
+    const packageJsonPath = join(process.cwd(), "package.json");
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+    packageJson.scripts = packageJson.scripts || {};
+    packageJson.scripts["type-check"] = "tsc --noEmit";
+    writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+    // Install TypeScript if not already installed
+    try {
+      execSync(
+        "npm install --save-dev typescript @types/react @types/react-dom",
+        { stdio: "inherit" }
+      );
+    } catch (error) {
+      console.error("Failed to install TypeScript dependencies:", error);
+    }
+
+    // Create tsconfig.json if it doesn't exist
+    const tsconfigPath = join(process.cwd(), "tsconfig.json");
+    if (!existsSync(tsconfigPath)) {
+      const tsconfig = {
+        compilerOptions: {
+          target: "ESNext",
+          useDefineForClassFields: true,
+          lib: ["DOM", "DOM.Iterable", "ESNext"],
+          allowJs: false,
+          skipLibCheck: true,
+          esModuleInterop: false,
+          allowSyntheticDefaultImports: true,
+          strict: true,
+          forceConsistentCasingInFileNames: true,
+          module: "ESNext",
+          moduleResolution: "Node",
+          resolveJsonModule: true,
+          isolatedModules: true,
+          noEmit: true,
+          jsx: "react-jsx",
+        },
+        include: ["src"],
+        references: [{ path: "./tsconfig.node.json" }],
+      };
+      writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+    }
+  }
 
   // Change back to the original directory
   process.chdir("..");
