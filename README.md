@@ -105,6 +105,16 @@ npm run build-all
 
 in the workspace directory.
 
+## Type check
+
+To type check and catch errors early, run:
+
+```bash
+npm run type-check
+```
+
+in the workspace directory.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
